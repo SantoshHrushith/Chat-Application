@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState,useRef } from 'react';
 import axios from 'axios';
 import { jwtDecode } from 'jwt-decode';
 import io from 'socket.io-client';
@@ -11,7 +11,9 @@ const ChatApp = () => {
   const [messages, setMessages] = useState([]);
   const [selectedUserId, setSelectedUserId] = useState(null);
   const [sendmsg, setSendmsg] = useState('');
+  const [selectedConv, setSelectedConv] = useState('');
 
+  const messagesEndRef = useRef(null);
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
@@ -76,9 +78,10 @@ const ChatApp = () => {
     };
   }, [userId, selectedUserId]);
 
-  const handleUserClick = (userId) => {
-    setSelectedUserId(userId); // Set the selected user ID for the chat
-    setMessages([]); // Clear messages when a new user is selected
+  const handleUserClick = (userId, username) => {
+    setSelectedUserId(userId);
+    setSelectedConv(username);
+    setMessages([]);
   };
 
   const handleSubmit = async (e) => {
@@ -98,64 +101,65 @@ const ChatApp = () => {
   };
 
   return (
-    <div style={{ display: 'flex', height: '100vh' }}>
-      {/* Users List on the Left */}
-      <div style={{ width: '30%', borderRight: '1px solid #ccc', padding: '10px' }}>
-        <table className='w-full border-separate border-spacing-2'>
-          <thead>
-            <tr>
-              <th className='border border-slate-600 rounded-md'>No</th>
-              <th className='border border-slate-600 rounded-md'>Chat</th>
-            </tr>
-          </thead>
-          <tbody>
-            {users.map((user, index) => (
-              <tr key={user._id} className='h-8'>
-                <td className='border border-slate-700 text-center'>{index + 1}</td>
-                <td className='border border-slate-700 text-center'>
-                  <button onClick={() => handleUserClick(user._id)}>
-                    {user.username}
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+    <div className="chat-container">
+          <div className="user-list">
+            <table>
+              <thead>
+                <tr>
+                  <th>Chat</th>
+                </tr>
+              </thead>
+              <tbody>
+                {users.map((user) => (
+                  <tr key={user._id} className="user-row">
+                    <td>
+                      <button onClick={() => handleUserClick(user._id, user.username)}>
+                        {user.username}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
 
-      {/* Chat Window on the Right */}
-      <div style={{ width: '70%', padding: '10px' }}>
-        {selectedUserId ? (
-          <>
-            <div>Chat Window</div>
-            <div>
-              {messages.length === 0 ? (
-                <p>No messages to display</p>
-              ) : (
-                messages.map((message) => (
-                  <div key={message._id}>
-                    <strong>{message.senderId === userId ? 'You' : 'Other'}:</strong> {message.message}
-                  </div>
-                ))
-              )}
-            </div>
-            <div>
-              <form onSubmit={handleSubmit}>
-                <input
-                  type="text"
-                  placeholder="Send a message"
-                  value={sendmsg}
-                  onChange={(e) => setSendmsg(e.target.value)}
-                />
-                <button type="submit">Send</button>
-              </form>
-            </div>
-          </>
-        ) : (
-          <p>Select a user to start a chat</p>
-        )}
-      </div>
-    </div>
+          <div className="chat-window">
+            {selectedUserId ? (
+              <>
+                <div className="chat-header">{selectedConv}</div>
+                <div className="messages">
+                  {messages.length === 0 ? (
+                    <p>No messages to display</p>
+                  ) : (
+                    messages.map((message) => (
+                      <div
+                        key={message._id}
+                        className={`message ${message.senderId === userId ? 'from-you' : 'from-other'}`}
+                      >
+                        {message.message}
+                      </div>
+                    ))
+                  )}
+                  {/* Scroll to bottom marker */}
+                  <div ref={messagesEndRef} />
+                </div>
+                <form onSubmit={handleSubmit} className="message-form">
+                  <input
+                    type="text"
+                    placeholder="Send a message"
+                    value={sendmsg}
+                    onChange={(e) => setSendmsg(e.target.value)}
+                    className="message-input"
+                  />
+                  <button type="submit" className="send-button">Send</button>
+                </form>
+              </>
+            ) : (
+              <p>Select a user to start a chat</p>
+            )}
+          </div>
+        </div>
+      
   );
 };
 
